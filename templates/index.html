@@ -1,0 +1,147 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Deepfake Image Detection</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            margin: 0;
+            padding: 20px;
+            background-color: #f4f4f9;
+        }
+
+        h1 {
+            color: #333;
+        }
+
+        .upload-container {
+            border: 2px dashed #ccc;
+            border-radius: 10px;
+            width: 300px;
+            padding: 20px;
+            text-align: center;
+            background-color: #fff;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .upload-container.dragging {
+            border-color: #0066cc;
+            background-color: #e6f7ff;
+        }
+
+        .upload-container input[type="file"] {
+            display: none;
+        }
+
+        img.preview {
+            display: block;
+            max-width: 100%;
+            max-height: 300px;
+            margin-top: 20px;
+            border-radius: 10px;
+        }
+
+        .result-container {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .result-container p {
+            font-size: 18px;
+            color: #333;
+        }
+
+        .result-container .result {
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <h1>Deepfake Detector</h1>
+    <div class="upload-container" id="upload-container">
+        Drag & Drop an image here or click to upload
+        <input type="file" id="file-input" accept="image/jpeg, image/png">
+    </div>
+    <img id="preview-image" class="preview" alt="Image Preview" style="display: none;">
+    <div class="result-container" id="result-container" style="display: none;">
+        <p>Result: <span class="result" id="result"></span></p>
+        <!-- <p>Confidence: <span class="confidence" id="confidence"></span></p> -->
+    </div>
+
+    <script>
+        const uploadContainer = document.getElementById('upload-container');
+        const fileInput = document.getElementById('file-input');
+        const previewImage = document.getElementById('preview-image');
+        const resultContainer = document.getElementById('result-container');
+        const resultText = document.getElementById('result');
+        const confidenceText = document.getElementById('confidence');
+
+        // Drag and drop events
+        uploadContainer.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadContainer.classList.add('dragging');
+        });
+
+        uploadContainer.addEventListener('dragleave', () => {
+            uploadContainer.classList.remove('dragging');
+        });
+
+        uploadContainer.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadContainer.classList.remove('dragging');
+            const file = e.dataTransfer.files[0];
+            handleFile(file);
+        });
+
+        uploadContainer.addEventListener('click', () => {
+            fileInput.click();
+        });
+
+        fileInput.addEventListener('change', () => {
+            const file = fileInput.files[0];
+            handleFile(file);
+        });
+
+        function handleFile(file) {
+            if (!file || !['image/jpeg', 'image/png'].includes(file.type)) {
+                alert('Please upload a JPG or PNG image.');
+                return;
+            }
+
+            // Display image preview
+            const reader = new FileReader();
+            reader.onload = (e) => {
+                previewImage.src = e.target.result;
+                previewImage.style.display = 'block';
+            };
+            reader.readAsDataURL(file);
+
+            // Send file to the API
+            const formData = new FormData();
+            formData.append('image', file);
+
+            fetch('http://localhost:5000/predict', {
+                method: 'POST',
+                body: formData,
+            })
+                .then((response) => response.json())
+                .then((data) => {
+                    alert('Check Result')
+                    resultText.textContent = data.result;
+                    //confidenceText.textContent = (data.confidence * 100).toFixed(2) + '%';
+                    resultContainer.style.display = 'block';
+                })
+                .catch((error) => {
+                    alert('An error occurred while fetching the prediction.');
+                    console.error(error);
+                });
+        }
+    </script>
+</body>
+</html>
